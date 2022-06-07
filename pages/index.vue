@@ -13,6 +13,24 @@
                 <b-col cols="12">
                     <h3>CODE</h3>
                 </b-col>
+                <b-col cols="12">
+                    <p> {{boleto.codigo_barras}} </p>
+                </b-col>
+                <b-col cols="12">
+                    <p> Length: {{ length_boleto }} </p>
+                </b-col>
+                <b-col cols="12" v-if="boleto_invalido">
+                    <p style="color: red;"> Boleto Inválido! </p>
+                </b-col>
+                <b-col cols="12" v-if="!boleto_invalido && length_boleto > 43">
+                    <p style="color: green;"> Success! </p>
+                </b-col>
+                <b-col v-if="codigo_barra_formatado">
+                    <p><b>Código de Barras Formatado:</b> </br>{{codigo_barra_formatado}}  </p>
+                </b-col>
+                <b-col v-if="linha_digitavel_boleto">
+                    <p><b>Linha digitável Boleto:</b> </br>{{linha_digitavel_boleto}}  </p>
+                </b-col>
             </b-row>
         </b-col>
     </b-row>
@@ -28,6 +46,13 @@
             width: 640,
             height: 200
         },
+        boleto: {
+          codigo_barras: ''
+        },
+        boleto_invalido: false,
+        length_boleto: '',
+        codigo_barra_formatado: '',
+        linha_digitavel_boleto: ''
       }
     },
     methods: {
@@ -55,9 +80,119 @@
               }
           }
       },
-      onDetected(data){
+      async onDetected(data){
         console.log(data)
-      }
+        console.log(data.codeResult.code)
+        this.boleto.codigo_barras = data.codeResult.code
+        var linhadigitavel = await this.retornarLinhaDigitavel(data.codeResult.code)
+      },
+      async retornarLinhaDigitavel(codigoBarra) {
+          let codigoBarraFormatado = codigoBarra.replace(/\./g, '').replace(/ /g, '')
+          console.log('codigoBarraFormatado', codigoBarraFormatado)
+          this.length_boleto = codigoBarraFormatado.length
+          if (codigoBarraFormatado.length !== 44) {
+              console.log("boleto inválido")
+              this.boleto_invalido = true
+              this.codigo_barra_formatado = ''
+              this.linha_digitavel_boleto = ''
+              return "boleto inválido"
+          }
+          else {
+              this.boleto_invalido = false
+              if (codigoBarraFormatado.slice(0, 1) !== '8') {
+                  console.log("oi 1")
+                  return this.linhaDigitavelBoleto(codigoBarraFormatado)
+              }
+              else {
+                  console.log("")
+                  console.log("oi 2")
+                  console.log("")
+                  return this.linhaDigitavelConsumo(codigoBarraFormatado)
+              }
+          }
+      },
+      async linhaDigitavelConsumo(codigoBarra) {
+          console.log("")
+          console.log("CODIGO_BARRA: ", codigoBarra)
+          console.log("")
+          let blocoUm = codigoBarra.slice(0, 11)
+          let digitoVerificadorUm = await this.calcularVerificadorMod10(blocoUm)
+          let blocoDois = codigoBarra.slice(11, 22)
+          let digitoVerificadorDois = await this.calcularVerificadorMod10(blocoDois)
+          let blocoTres = codigoBarra.slice(22, 33)
+          let digitoVerificadorTres = await this.calcularVerificadorMod10(blocoTres)
+          let blocoQuatro = codigoBarra.slice(33, 44)
+          let digitoVerificadorQuatro = await this.calcularVerificadorMod10(blocoQuatro)
+
+          let teste = blocoUm + " " + 
+                      digitoVerificadorUm + " " + 
+                      blocoDois + " " + 
+                      digitoVerificadorDois + " " + 
+                      blocoTres + " " + 
+                      digitoVerificadorTres + " " + 
+                      blocoQuatro + " " + 
+                      digitoVerificadorQuatro
+
+          console.log("")
+          console.log('LinhaDigitavelConsumo: ', teste)
+          console.log("")
+          this.codigo_barra_formatado = teste
+          return teste
+      },
+      async linhaDigitavelBoleto(codigoBarra) {
+          let codigoBanco = codigoBarra.slice(0, 3)
+          let codigoMoeda = codigoBarra.slice(3, 4)
+          let campoLivreBlocoUm = codigoBarra.slice(19, 24)
+          let digitoVerificadorUm = await this.calcularVerificadorMod10(`${codigoBanco}${codigoMoeda}${campoLivreBlocoUm}`)
+          let campoLivreBlocoDois = codigoBarra.slice(24, 34)
+          let digitoVerificadorDois = await this.calcularVerificadorMod10(campoLivreBlocoDois)
+          let campoLivreBlocoTres = codigoBarra.slice(34, 44)
+          let digitoVerificadorTres = await this.calcularVerificadorMod10(campoLivreBlocoTres)
+          let digitoVerificadorQuatro = codigoBarra.slice(4, 5)
+          let fatorVencimento = codigoBarra.slice(5, 9)
+          let valor = codigoBarra.slice(9, 19)
+
+          
+
+          let teste = codigoBanco + " "
+              + codigoMoeda + " "
+              + campoLivreBlocoUm + " "
+              + digitoVerificadorUm + " "
+              + campoLivreBlocoDois + " "
+              + digitoVerificadorDois + " "
+              + campoLivreBlocoTres + " "
+              + digitoVerificadorTres + " "
+              + digitoVerificadorQuatro + " "
+              + fatorVencimento + " "
+              + valor
+
+          console.log('LinhaDigitavelBoleto')
+          console.log(teste)
+          this.linha_digitavel_boleto = teste
+          return teste
+      },
+      async calcularVerificadorMod10(codigoBarraSessao) {
+          if (codigoBarraSessao === "") {
+              return "";
+          }
+          let digitoVerificador = 0;
+          let numeroPar = true;
+          let i = codigoBarraSessao.length
+          for (let i = codigoBarraSessao.length; i > 0; i--) {
+              const digito = parseInt(codigoBarraSessao[i - 1]);
+              if (numeroPar) {
+                  digitoVerificador += Math.floor((digito * 2) / 10) + ((digito * 2) % 10);
+              } else {
+                  digitoVerificador += digito;
+              }
+              numeroPar = !numeroPar;
+          }
+          digitoVerificador = digitoVerificador % 10;
+          if (digitoVerificador !== 0) {
+              digitoVerificador = 10 - digitoVerificador;
+          }
+          return String(digitoVerificador);
+      },
     }
   }
 </script>
