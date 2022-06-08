@@ -2,11 +2,7 @@
   <b-container class="bv-example-row" fluid>
     <b-row>
         <b-col cols="6" lg="6" class="col-center mt-5 box-center align_camera">
-            <!-- <b-row> -->
-                <!-- <b-col cols="10" class="align_camera"> -->
-                    <v-quagga :onDetected="onDetected" :onProcessed="onProcessed" :readerSize="readerSize" :readerTypes="['i2of5_reader']"></v-quagga>
-                <!-- </b-col> -->
-            <!-- </b-row> -->
+            <v-quagga :onDetected="onDetected" :onProcessed="onProcessed" :readerSize="readerSize" :aspectRatio="aspectRatio" :patchSize="patchSize" :readerTypes="['i2of5_reader']"></v-quagga>
         </b-col>
         <b-col cols="5" class="offset-1 mt-5">
             <b-row>
@@ -25,11 +21,14 @@
                 <b-col cols="12" v-if="!boleto_invalido && length_boleto > 43">
                     <p style="color: green;"> Success! </p>
                 </b-col>
-                <b-col v-if="codigo_barra_formatado">
-                    <p><b>Código de Barras Formatado:</b> </br>{{codigo_barra_formatado}}  </p>
+                <b-col cols="12" v-if="codigo_barra_formatado">
+                    <p><b>Código de Barras Formatado:</b> <br>{{codigo_barra_formatado}}  </p>
                 </b-col>
-                <b-col v-if="linha_digitavel_boleto">
-                    <p><b>Linha digitável Boleto:</b> </br>{{linha_digitavel_boleto}}  </p>
+                <b-col cols="12" v-if="linha_digitavel_boleto">
+                    <p><b>Linha digitável Boleto:</b> <br>{{linha_digitavel_boleto}}  </p>
+                </b-col>
+                <b-col cols="12" v-if="hidden_button">
+                    <b-button @click="openQuaggar">Start</b-button>
                 </b-col>
             </b-row>
         </b-col>
@@ -43,12 +42,18 @@
     data() {
       return {
         readerSize: {
-            width: 640,
+            width: 600,
             height: 200
         },
+        aspectRatio: {
+            min: 1,
+            max: 2,
+        },
+        patchSize: "x-large",
         boleto: {
           codigo_barras: ''
         },
+        hidden_button: false,
         boleto_invalido: false,
         length_boleto: '',
         codigo_barra_formatado: '',
@@ -137,6 +142,8 @@
           console.log('LinhaDigitavelConsumo: ', teste)
           console.log("")
           this.codigo_barra_formatado = teste
+          this.hidden_button = true
+          Quagga.stop()
           return teste
       },
       async linhaDigitavelBoleto(codigoBarra) {
@@ -169,6 +176,8 @@
           console.log('LinhaDigitavelBoleto')
           console.log(teste)
           this.linha_digitavel_boleto = teste
+          this.hidden_button = true
+          Quagga.stop()
           return teste
       },
       async calcularVerificadorMod10(codigoBarraSessao) {
@@ -193,6 +202,29 @@
           }
           return String(digitoVerificador);
       },
+      openQuaggar(){
+          this.hidden_button = false
+          Quagga.init({
+            inputStream : {
+                name : "Live",
+                type : "LiveStream",
+                target: document.querySelector('#yourElement')    // Or '#yourElement' (optional)
+            },
+            decoder : {
+                readers : ["i2of5_reader"]
+            },
+            locator: {
+                patchSize: "x-large"
+            }
+        }, function(err) {
+            if (err) {
+                console.log(err);
+                return
+            }
+            console.log("Initialization finished. Ready to start");
+            Quagga.start();
+        });
+      }
     }
   }
 </script>
