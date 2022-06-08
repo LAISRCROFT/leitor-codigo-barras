@@ -2,7 +2,7 @@
   <b-container class="bv-example-row" fluid>
     <b-row>
         <b-col cols="6" lg="6" class="col-center mt-5 box-center align_camera">
-            <v-quagga :onDetected="onDetected" :onProcessed="onProcessed" :readerSize="readerSize" :aspectRatio="aspectRatio" :patchSize="patchSize" :readerTypes="['i2of5_reader']"></v-quagga>
+            <v-quagga :onDetected="onDetected" :onProcessed="onProcessed" :readerSize="readerSize" :aspectRatio="aspectRatio" :patchSize="patchSize" :readerTypes="['i2of5_reader']" class="quagga"></v-quagga>
         </b-col>
         <b-col cols="5" class="offset-1 mt-5">
             <b-row>
@@ -28,7 +28,7 @@
                     <p><b>Linha digitável Boleto:</b> <br>{{linha_digitavel_boleto}}  </p>
                 </b-col>
                 <b-col cols="12" v-if="hidden_button">
-                    <b-button @click="openQuaggar">Start</b-button>
+                    <b-button @click="openQuaggar" class="btn_start">Start</b-button>
                 </b-col>
             </b-row>
         </b-col>
@@ -228,15 +228,29 @@
     }
   }
 </script>
-<style scoped>
+<style lang="css" scoped>
   .align_camera {
     
   }
- 
-  .viewport canvas, .viewport video {
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 265px;
-}
+  .btn_start{
+      background: #fff;
+      border: solid 1px #7c7c7c;
+      padding: 4px 49px;
+      color: #262626;
+  }
+  body.overflowHidden {
+      overflow: block !important;
+  }
+  .viewport {
+      height: 150px;
+  }
+
+  .drawingBuffer {
+      height: 150px;
+      margin-top: -150px;
+  }
+
+  .viewport video {
+      height: 150px;
+  }
 </style>
